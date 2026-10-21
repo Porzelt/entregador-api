@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-entregador}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-senha-falsa-dev}
+      POSTGRES_DB: ${DB_NAME:-entregador}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-entregador} -d ${DB_NAME:-entregador}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      TZ: ${TZ:-America/Sao_Paulo}
+    ports:
+      - "${PORT:-3000}:3000"
+
+volumes:
+  pgdata:
